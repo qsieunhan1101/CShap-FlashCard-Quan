@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -12,13 +13,13 @@ public enum ButtonType
 
 public class ButtonParent : MonoBehaviour
 {
+    [SerializeField] protected ButtonType buttonType;
     [SerializeField] protected Button btnSelf;
     [SerializeField] protected RectTransform rectTransform;
-    [SerializeField] protected GameObject imgText;
-
-    [SerializeField] protected string key;
-
-    [SerializeField] protected ButtonType buttonType;
+    
+    
+    [SerializeField] public GameObject imgText;
+    [SerializeField] public int key;
 
 
     private void Start()
@@ -29,6 +30,7 @@ public class ButtonParent : MonoBehaviour
 
     protected void onClickSelf()
     {
+        Debug.Log("ONCLICK SELF");
         StartCoroutine(flip(true));
         GameLogicManager.Instance.setButtonValue(this);
     }
@@ -74,7 +76,7 @@ public class ButtonParent : MonoBehaviour
         return buttonType;
     }
 
-    public string getKey()
+    public int getKey()
     {
         return key;
     }
