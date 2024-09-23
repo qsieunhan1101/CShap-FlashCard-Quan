@@ -10,6 +10,7 @@ public class LevelLogic : MonoBehaviour
     [SerializeField] private Animator anim;
     [SerializeField] private string currentAnimName;
 
+    [SerializeField] private List<AudioSource> listAudios;
 
 
     [SerializeField] private Card card_1;
@@ -17,6 +18,10 @@ public class LevelLogic : MonoBehaviour
     private int quantityCard = 0;
     private int flipTurn = 3;
     private int flipScore = 0;
+
+    private float timeNonInteract = 0;
+    private bool isCusorActive = false;
+    private bool isGamePlay = false;
 
 
     public static Action<int> updateFlipTurnUI;
@@ -30,6 +35,21 @@ public class LevelLogic : MonoBehaviour
         OnInit();
 
     }
+    private void Update()
+    {
+        if (quantityCard == 0 && isGamePlay == true)
+        {
+            timeNonInteract += Time.deltaTime;
+        }
+        if (timeNonInteract >= 5.0f)
+        {
+            timeNonInteract = 0;
+            if (isCusorActive == false)
+            {
+                ActiveCardCusor();
+            }
+        }
+    }
 
 
     private void OnInit()
@@ -40,6 +60,12 @@ public class LevelLogic : MonoBehaviour
         {
             updateFlipTurnUI(flipTurn);
         }
+        DeactiveCardCusor();
+    }
+
+    private void PlayAudioClip(int soundNumber)
+    {
+        listAudios[soundNumber].Play();
     }
     private IEnumerator Shuffle()
     {
@@ -47,12 +73,12 @@ public class LevelLogic : MonoBehaviour
         yield return new WaitForSeconds(1.0f);
         for (int i = 0; i < listCards.Count; i++)
         {
-            listCards[i].FlipUp();
+            StartCoroutine(listCards[i].FlipUp());
         }
         yield return new WaitForSeconds(1.0f);
         for (int i = 0; i < listCards.Count; i++)
         {
-            listCards[i].FlipDown();
+            StartCoroutine(listCards[i].FlipDown());
         }
         yield return new WaitForSeconds(1.0f);
         ChangeAnim(Constant.Amim_Shuffle);
@@ -60,6 +86,7 @@ public class LevelLogic : MonoBehaviour
         RandomCardPosition();
         UIManager.Instance.CloseUI<Canvas_BlockInput>(0);
 
+        isGamePlay = true;
     }
 
     private void RandomCardPosition()
@@ -80,7 +107,28 @@ public class LevelLogic : MonoBehaviour
 
     }
 
+    private void ActiveCardCusor()
+    {
+        isCusorActive = true;
+        for (int i = 0; i < listCards.Count; i++)
+        {
 
+            if (listCards[i].gameObject.activeSelf == true)
+            {
+                listCards[i].CusorActive(true);
+                return;
+            }
+        }
+    }
+    private void DeactiveCardCusor()
+    {
+        isCusorActive = false;
+        timeNonInteract = 0;
+        for (int i = 0; i < listCards.Count; i++)
+        {
+            listCards[i].CusorActive(false);
+        }
+    }
 
     private void ChangeAnim(string animName)
     {
@@ -98,26 +146,36 @@ public class LevelLogic : MonoBehaviour
     {
         if (quantityCard == 2)
         {
+            WaitForSeconds waitCompare = new WaitForSeconds(1.5f);
+            WaitForSeconds waitOpenUI = new WaitForSeconds(1f);
             UIManager.Instance.OpenUI<Canvas_BlockInput>();
             //so sanh dung
             if (card_1.CardId == card_2.CardId)
             {
-                yield return new WaitForSeconds(1f);
+                yield return new WaitForSeconds(0.7f);
+                PlayAudioClip(0);
+                yield return waitCompare;
                 card_1.gameObject.SetActive(false);
                 card_2.gameObject.SetActive(false);
                 flipScore++;
                 if (flipScore == 2)
                 {
-                    yield return new WaitForSeconds(1.0f);
+                    yield return waitOpenUI;
                     GameManager.Instance.ChangeGameState(GameState.Victory);
                 }
             }
             //so sanh sai
             if (card_1.CardId != card_2.CardId)
             {
+                yield return waitCompare;
+                PlayAudioClip (UnityEngine.Random.Range(1, listAudios.Count));
+                StartCoroutine(card_1.VibrateCard());
+                StartCoroutine(card_2.VibrateCard());
                 yield return new WaitForSeconds(1f);
-                card_1.FlipDown();
-                card_2.FlipDown();
+                StartCoroutine(card_1.FlipDown());
+                StartCoroutine(card_2.FlipDown());
+
+                
                 flipTurn--;
                 if (updateFlipTurnUI != null)
                 {
@@ -125,9 +183,8 @@ public class LevelLogic : MonoBehaviour
                 }
                 if (flipTurn == 0)
                 {
-                    yield return new WaitForSeconds(1.0f);
+                    yield return waitOpenUI;
                     GameManager.Instance.ChangeGameState(GameState.Fail);
-                    
                 }
             }
             quantityCard = 0;
@@ -145,6 +202,7 @@ public class LevelLogic : MonoBehaviour
         {
             card_1 = card;
             quantityCard = 1;
+            DeactiveCardCusor();
             return;
         }
         if (quantityCard == 1)
@@ -155,4 +213,5 @@ public class LevelLogic : MonoBehaviour
             return;
         }
     }
+
 }

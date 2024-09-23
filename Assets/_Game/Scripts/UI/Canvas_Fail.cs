@@ -9,6 +9,10 @@ public class Canvas_Fail : UICanvas
     {
         btnReplay.onClick.AddListener(OnReplay);
     }
+    private void OnEnable()
+    {
+        transform.SetAsLastSibling();
+    }
 
     private void OnReplay()
     {
